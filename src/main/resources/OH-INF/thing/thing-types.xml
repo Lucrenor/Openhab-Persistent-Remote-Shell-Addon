@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="remoteshell"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0">
+
+	<thing-type id="remoteDevice">
+		<label>Remote Linux Device</label>
+		<description>A device with a persistent shell that can be controlled over HTTP.</description>
+
+		<channels>
+			<channel id="shellControl" typeId="shellControlChannel"/>
+			<channel id="command" typeId="commandChannel"/>
+			<channel id="lastOutput" typeId="outputChannel"/>
+		</channels>
+
+		<config-description>
+			<!-- ADDED: The missing labels and descriptions -->
+			<parameter name="hostname" type="text" required="true">
+				<label>Hostname or IP Address</label>
+				<description>The IP address of the remote device.</description>
+			</parameter>
+			<parameter name="port" type="integer" required="true">
+				<label>Port</label>
+				<description>The port the remote agent is listening on.</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+	<channel-type id="shellControlChannel">
+		<item-type>Switch</item-type>
+		<label>Shell Connection</label>
+		<category>control</category>
+	</channel-type>
+
+	<channel-type id="commandChannel">
+		<item-type>String</item-type>
+		<label>Command Input</label>
+		<category>control</category>
+	</channel-type>
+
+	<channel-type id="outputChannel">
+		<item-type>String</item-type>
+		<label>Last Command Output</label>
+		<state readOnly="true"/>
+	</channel-type>
+</thing:thing-descriptions>
