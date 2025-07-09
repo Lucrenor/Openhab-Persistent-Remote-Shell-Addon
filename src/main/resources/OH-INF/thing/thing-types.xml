@@ -13,7 +13,6 @@
 		</channels>
 
 		<config-description>
-			<!-- ADDED: The missing labels and descriptions -->
 			<parameter name="hostname" type="text" required="true">
 				<label>Hostname or IP Address</label>
 				<description>The IP address of the remote device.</description>
