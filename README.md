@@ -1,95 +1,115 @@
 # remoteshell Binding
 
-_Give some details about what this binding is meant for - a protocol, system, specific device._
+_This binding allows you to connect to your local Linux machines over HTTP, providing a persistent shell session to manage them remotely from within OpenHAB._
 
-_If possible, provide some resources like pictures (only PNG is supported currently), a video, etc. to give an impression of what can be done with this binding._
-_You can place such resources into a `doc` folder next to this README.md._
+_It is designed to give you stateful control, meaning you can run a series of commands like `cd` to change directories, and the session will remember its state for the next command._
 
-_Put each sentence in a separate line to improve readability of diffs._
+_This is achieved by pairing the binding with a lightweight Python agent running on the target machine._
 
 ## Supported Things
 
-_Please describe the different supported things / devices including their ThingTypeUID within this section._
-_Which different types are supported, which models were tested etc.?_
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
+_This binding supports a single Thing type for connecting to a remote Linux machine._
 
-- `bridge`: Short description of the Bridge, if any
-- `sample`: Short description of the Thing with the ThingTypeUID `sample`
+- `remoteDevice` - Represents a single remote Linux machine accessible over the network.
+
 
 ## Discovery
 
-_Describe the available auto-discovery features here._
-_Mention for what it works and what needs to be kept in mind when using it._
+_This binding does not support any auto-discovery features. Each remote device must be configured manually as a Thing in OpenHAB._
 
 ## Binding Configuration
 
-_If your binding requires or supports general configuration settings, please create a folder ```cfg``` and place the configuration file ```<bindingId>.cfg``` inside it._
-_In this section, you should link to this file and provide some information about the options._
-_The file could e.g. look like:_
-
-```
-# Configuration for the remoteshell Binding
-#
-# Default secret key for the pairing of the remoteshell Thing.
-# It has to be between 10-40 (alphanumeric) characters.
-# This may be changed by the user for security reasons.
-secret=openHABSecret
-```
-
-_Note that it is planned to generate some part of this based on the information that is available within ```src/main/resources/OH-INF/binding``` of your binding._
-
-_If your binding does not offer any generic configurations, you can remove this section completely._
+_This binding does not require any global configuration in the `services/remoteshell.cfg` file. All configuration is done at the Thing level._
 
 ## Thing Configuration
 
-_Describe what is needed to manually configure a thing, either through the UI or via a thing-file._
-_This should be mainly about its mandatory and optional configuration parameters._
+_To use the binding, you must manually create a `Remote Linux Device` Thing for each machine you want to control. This can be done through the OpenHAB UI or a `.things` file._
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
+_The following configuration parameters are available:._
 
 ### `sample` Thing Configuration
 
-| Name            | Type    | Description                           | Default | Required | Advanced |
-|-----------------|---------|---------------------------------------|---------|----------|----------|
-| hostname        | text    | Hostname or IP address of the device  | N/A     | yes      | no       |
-| password        | text    | Password to access the device         | N/A     | yes      | no       |
-| refreshInterval | integer | Interval the device is polled in sec. | 600     | no       | yes      |
+| Name            | Type    | Description                                                                  | Default | Required | Advanced |
+|-----------------|---------|------------------------------------------------------------------------------|---------|----------|----------|
+| hostname        | text    | The hostname or IP address of the target device where the agent is running.  | N/A     | yes      | no       |
+| port            | integer | The port that the Python agent is listening on.                              | 9090    | yes      | no       |
 
 ## Channels
 
-_Here you should provide information about available channel types, what their meaning is and how they can be used._
+_The `remoteDevice` Thing has the following channels:_
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
-
-| Channel | Type   | Read/Write | Description                 |
-|---------|--------|------------|-----------------------------|
-| control | Switch | RW         | This is the control channel |
+| Channel      | Type   | Read/Write  | Description                                                                                            |
+|--------------|--------|-------------|--------------------------------------------------------------------------------------------------------|
+| shellControl | Switch | R/W         | Toggles the persistent shell session on the remote agent. Turn it ON to connect and OFF to disconnect. |
+| command      | String | W           | Sends a shell command to the active session on the remote agent.                                       |
+| lastOutput   | String | R           | Displays the plain text output from the last executed command.                                         |
 
 ## Full Example
 
-_Provide a full usage example based on textual configuration files._
-_*.things, *.items examples are mandatory as textual configuration is well used by many users._
-_*.sitemap examples are optional._
+_Here is a full example of how to configure and use the binding with textual configuration files (`.things`, `.items`, and `.sitemap`)._
 
 ### Thing Configuration
 
-```java
-Example thing configuration goes here.
+```remoteshell.things
+// This file defines a Thing for a remote machine with the IP 192.168.1.106
+binding.remoteshell:remoteDevice:kali "Kali Linux Shell" [ hostname="192.168.1.106", port=9090 ]
 ```
 
 ### Item Configuration
 
-```java
-Example item configuration goes here.
+```remoteshell.items
+// Items to link to the channels of our Kali Linux Shell Thing
+Switch Kali_Shell_Connection "Shell Connection" { channel="remoteshell:remoteDevice:kali:shellControl" }
+String Kali_Shell_Command   "Command Input"    { channel="remoteshell:remoteDevice:kali:command" }
+String Kali_Shell_Output    "Last Output"      { channel="remoteshell:remoteDevice:kali:lastOutput" }
 ```
 
 ### Sitemap Configuration
 
-```perl
-Optional Sitemap configuration goes here.
-Remove this section, if not needed.
+```remoteshell.sitemap
+sitemap remoteshell label="Remote Shell Control" {
+    Frame label="Kali Linux Terminal" {
+        Switch item=Kali_Shell_Connection
+        Webview url="http://192.168.1.106:9090/get_last_output" height=15 // A simple way to see output
+    }
+    Frame label="Command Input" {
+        Setpoint item=Kali_Shell_Command label="Command"
+    }
+}
 ```
+_Note: The `Webview` in the sitemap is a simple method for basic UIs. For the best experience, it is recommended to use the YAML code provided in the `ui-code.yaml` file on a Main UI page._
 
-## Any custom content here!
+## Architecture & Agent Setup
 
-_Feel free to add additional sections for whatever you think should also be mentioned about your binding!_
+_This binding requires a lightweight Python agent to be running on each target machine._
+
+### Architecture
+
+- The Python Agent (`agent.py`): A Flask server that runs on the target Linux machine. It uses `pexpect` to spawn and manage a persistent bash shell. It listens for commands from the OpenHAB binding.
+- The OpenHAB Binding (`.jar` file): The addon that runs on your OpenHAB server. It communicates with the Python agent to start/stop the shell and send commands.
+
+### Python Agent Setup
+_This agent must be running on every Linux machine you wish to control._
+#### Prerequisites:
+- Python 3.x
+- pip
+#### Setup Steps:
+- Download the `agent.py` file from this repository to a directory on your target machine.
+- Open a terminal, navigate to that directory, and create a Python virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+- Install the required libraries inside the active environment:
+```bash
+pip install pexpect flask flask-cors
+```
+- Start the agent:
+```bash
+python3 agent.py
+```
+_The agent will now be listening for requests on port `9090.`_
+
+
+
+
