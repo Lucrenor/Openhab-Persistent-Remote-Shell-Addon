@@ -1,0 +1,74 @@
+ config:
+  fixedType: canvas
+  label: Persistent Remote Shell
+  layoutType: fixed
+  sidebar: true
+blocks: []
+masonry: []
+grid: []
+canvas:
+  - component: oh-canvas-layer
+    config: {}
+    slots:
+      default:
+        - component: oh-canvas-item
+          config:
+            h: 25
+            w: 45
+            x: 524
+            y: 144
+          slots:
+            default:
+              - component: oh-toggle
+                config:
+                  color: "=(items.Remote_Linux_Device_Shell_Connection.state === 'ON') ? 'red' :
+                    'green'"
+                  item: Remote_Linux_Device_Shell_Connection
+                  label: Shell Connection
+                  style:
+                    color: "#CC5500"
+        - component: oh-canvas-item
+          config:
+            h: 100
+            w: 480
+            x: 100
+            y: 35
+          slots:
+            default:
+              - component: oh-input-card
+                config:
+                  clearButton: true
+                  item: Remote_Linux_Device_Command_Input
+                  outline: true
+                  placeholder: Type command and press Enter
+                  sendButton: true
+                  style:
+                    background: "#2b2b2b"
+                    border-radius: 4px
+                    color: "#a9b7c6"
+                  stylesheet: |
+                    .card-content .input-clear-button {
+                      color: #ff3b30 !important;
+                    }
+                  title: Command Input
+                  type: text
+        - component: oh-canvas-item
+          config:
+            h: 700
+            w: 630
+            x: 600
+            y: 35
+          slots:
+            default:
+              - component: oh-label-card
+                config:
+                  fontSize: 15px
+                  item: Remote_Linux_Device_Last_Command_Output
+                  style:
+                    background: "#2b2b2b"
+                    height: 100%
+                    overflow: auto
+                    white-space: pre-wrap
+                  title: Current Output
+                  vertical: true
+
